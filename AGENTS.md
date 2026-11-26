@@ -14,7 +14,7 @@ The authoritative product scope is in docs/requirements.md.
 
 ## Scope Boundaries
 
-- The owner/admin determines which team advances.
+- The owner/admin determines which team advances and which team is eliminated.
 - Do not implement score calculation, tie-breakers, fixtures,
   sports APIs, payments, or runtime AI.
 - One active quiniela per group.

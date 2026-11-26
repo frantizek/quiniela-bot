@@ -49,8 +49,8 @@ fixtures, or consult sports-result services.
 - Documentation, code identifiers, and developer comments: English.
 - User-facing Telegram messages and buttons: Mexican Spanish.
 
-Spanish examples inside documentation are permitted when illustrating
-the actual bot interface.
+Documentation describes interface behavior in English.
+Actual Telegram messages and buttons will be implemented in Mexican Spanish.
 
 ## Proposed Technical Direction
 

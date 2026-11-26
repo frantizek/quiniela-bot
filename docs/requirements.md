@@ -16,6 +16,18 @@ Can join an open quiniela and view its public status.
 ### Group Owner or Authorized Administrator
 Can configure the quiniela, open registration, and record outcomes.
 
+Proposed MVP authorization policy:
+- The current Telegram group owner and current group administrators
+  are authorized.
+- There is no separate bot-managed administrator list.
+- Telegram group-role changes determine authorization.
+- Administrative actions require an identifiable acting user.
+- Authorization is checked for each privileged action, including
+  final confirmation.
+- If authorization cannot be verified, no state is changed.
+
+This policy requires approval before implementation.
+
 ### Bot
 Validates actions, stores state, assigns teams, and publishes updates.
 
@@ -62,7 +74,7 @@ the team list.
 Acceptance:
 - The bot publishes a Spanish registration message.
 - The message displays available slots and the no-withdrawal rule.
-- The message includes a "Participar" button.
+- The message includes a Join button labeled in Mexican Spanish.
 
 ### FR-04 — Register a Participant
 Priority: Must
@@ -94,8 +106,10 @@ Acceptance:
 ### FR-06 — Record an Outcome
 Priority: Must
 
-An authorized administrator identifies the advancing team and the
-eliminated team after a completed elimination series.
+An authorized administrator records one completed elimination outcome
+at a time by identifying the advancing team and the eliminated team.
+
+The bot does not model individual matches or series.
 
 Acceptance:
 - Both teams belong to the current quiniela.
@@ -232,3 +246,4 @@ Negative scenarios:
 - Data retention and deletion policy.
 - Exact commands and administrator interaction flow.
 - Delivery deadline and weekly development availability.
+- Approval of the proposed Telegram-native administrator authorization policy.
