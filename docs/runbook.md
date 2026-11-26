@@ -1,219 +1,211 @@
 # Operations Runbook
 
-Status: Planning baseline. Not yet an executable deployment guide.
+Status: Operational planning baseline.
+Local development checks passed; deployment procedures remain unverified.
 
-Do not deploy using this document until environment details,
-commands, and recovery procedures have been verified.
+Do not use this document as an executable deployment guide yet.
 
 ## 1. Purpose
 
-Document safe operation of Quiniela-Bot on the existing Oracle OCI
-infrastructure without disrupting the existing bot.
+Operate Quiniela-Bot independently from the existing OCI bot.
 
-Product behavior:
-- Administrators determine advancement and elimination.
-- Assignments are immutable.
-- Committed outcomes have no correction workflow in the first version.
-- Announcement retries must not repeat business actions.
+Recovery must preserve assignments and committed outcomes.
+Announcement retries must not repeat business actions.
 
-## 2. Environment Record
+No outcome correction exists in the first implementation.
 
-Complete this table using sanitized information.
+## 2. Environment Summary
 
-| Item | Current value |
+Operator-reported OCI details:
+- Ubuntu 22.04.5 LTS.
+- Existing bot uses Python 3.12, uv, systemd, and polling.
+- One logical CPU.
+- Approximately 5.1 GiB available memory at the reported snapshot.
+- Approximately 38 GB available root-filesystem space.
+
+Locally verified:
+- Python 3.12.10.
+- uv-based environment and dependency lock.
+- Three smoke tests passed.
+- Lint and formatting passed.
+
+This is not deployment or capacity approval.
+
+## 3. Unresolved Operational Configuration
+
+| Item | Status |
 |---|---|
-| Host operating system | Unconfirmed |
-| Python version | Unconfirmed |
-| Telegram library and version | Unconfirmed |
-| Existing deployment supervisor | Unconfirmed |
-| Available CPU, memory, and disk | Unconfirmed |
-| Application directory | Unconfirmed |
-| Service name | Unconfirmed |
-| Runtime user | Unconfirmed |
-| Database location | Unconfirmed |
-| Secret storage method | Unconfirmed |
-| Backup location and access controls | Unconfirmed |
-| Log location and rotation policy | Unconfirmed |
-| Deployment and rollback commands | Unconfirmed |
+| Target filesystem and capacity under load | Unverified |
+| Application directory | Unselected |
+| Service name | Unselected |
+| Runtime user | Unselected |
+| Database path | Unselected |
+| Protected secret storage | Unselected |
+| Log path and rotation | Unselected |
+| Backup method, schedule, and retention | Unselected |
+| Deployment commands | Unverified |
+| Restore and rollback commands | Unverified |
 
-Do not record tokens, private keys, passwords, public access credentials,
-or unnecessary host identifiers in this repository.
+Do not record credentials or unnecessary host identifiers.
 
-## 3. Isolation Requirements
+## 4. Isolation Requirements
 
-Quiniela-Bot must have its own:
-- Telegram bot token.
-- Runtime configuration.
-- Python environment.
+Use separate:
+- Token and protected configuration.
+- Project directory and Python environment.
 - Database.
-- Service definition.
+- systemd service.
 - Logs and backup scope.
 
-Do not alter the existing bot's environment, database, configuration,
-or service.
+Do not alter the existing bot's dependencies, environment, data, or service.
+Run one Quiniela-Bot process initially.
+Do not change OCI system Python.
 
-Verify available capacity before deployment.
-Run only one Quiniela-Bot application process initially.
+## 5. Deployment Gate
 
-## 4. Pre-Deployment Gate
+Before deployment:
+- Product tests and private rehearsal pass.
+- OCI capacity and isolation are verified.
+- Secret handling and logs are reviewed.
+- Migrations are tested.
+- Backup and restore are demonstrated.
+- Deployment and rollback procedures are documented.
 
-Deployment is blocked until:
+Before real-participant use:
+- Approve retention and deletion.
+- Accept the correction limitation explicitly or implement approved correction.
 
-- Python and Telegram library versions are selected.
-- Local setup and test commands are documented.
-- Critical automated tests pass.
-- Private-group rehearsal passes.
-- OCI capacity and service isolation are verified.
-- Secret handling and log behavior are reviewed.
-- Database migration procedures are verified.
-- Backup and restore have been demonstrated.
-- Deployment and rollback commands are documented.
+## 6. Planned Deployment Sequence
 
-Real-participant use additionally requires:
-- Approved retention and deletion rules.
-- Explicit acceptance of the correction limitation, or an approved
-  and tested correction workflow.
-
-## 5. Deployment Procedure
-
-Exact commands: Pending environment verification.
-
-Approved sequence:
+Exact commands remain pending.
 
 1. Identify the release commit.
-2. Review changes and applicable migration notes.
-3. Confirm the existing bot will not be affected.
-4. Create and verify a recoverable backup if persistent data exists.
-5. Stop only Quiniela-Bot when required by the release procedure.
-6. Apply the reviewed release and migrations.
-7. Start exactly one Quiniela-Bot process.
-8. Perform smoke checks.
-9. Record the deployed commit and verification results.
+2. Review changes and migrations.
+3. Confirm isolation from the existing bot.
+4. Create and verify a recoverable backup when data exists.
+5. Stop only Quiniela-Bot if the procedure requires it.
+6. Apply the release and reviewed migrations.
+7. Start exactly one process.
+8. Run smoke checks.
+9. Record release and results.
 
-Do not automate deployment before this sequence is verified manually.
+Validate manually before automating deployment.
 
-## 6. Smoke Checks
+## 7. Operational Smoke Checks
 
 Verify:
-- The process starts without exposing secrets.
-- The bot responds in the designated test group.
-- Current administrator authorization works.
-- Unauthorized actions do not mutate state.
-- Stored quiniela state loads correctly.
-- No new assignments appear for an existing draw.
-- Pending announcements can recover without repeating outcomes.
-- The existing bot remains operational.
+- Startup without secret exposure.
+- Response in the designated test group.
+- Current-role authorization.
+- Rejection of unauthorized mutations.
+- Existing state loads correctly.
+- No redraw of stored assignments.
+- Announcement recovery does not repeat outcomes.
+- Existing bot remains operational.
 
-Use non-destructive checks for any existing real quiniela.
+Avoid destructive checks against real quinielas.
 
-## 7. Restart Procedure
+## 8. Restart
 
-Exact commands: Pending supervisor selection.
+Exact commands remain pending.
 
-1. Identify the Quiniela-Bot service.
-2. Confirm the restart does not target the existing bot.
-3. Restart only Quiniela-Bot.
-4. Verify there is exactly one application process.
-5. Check state recovery and pending announcements.
-6. Record unexpected behavior.
+1. Identify the correct service.
+2. Restart only Quiniela-Bot.
+3. Verify one process.
+4. Verify state and announcement recovery.
+5. Record unexpected behavior.
 
-Never delete the database to resolve a startup problem.
-Never manually redraw teams during recovery.
+Never delete the database to fix startup.
+Never redraw during recovery.
 
-## 8. Backup Procedure
+## 9. Backup
 
-Backup commands, frequency, and retention: Pending approval.
+Method, commands, frequency, and retention remain pending.
 
 The verified procedure must:
 - Capture a consistent database backup.
 - Protect participant information.
-- Include required recovery metadata.
-- Keep secrets out of repository backups.
-- Verify backup integrity.
-- Document how pending announcements are handled after restoration.
+- Record required recovery metadata.
+- Verify integrity.
+- Account for pending announcements.
 
-Do not assume copying a live database file is a sufficient procedure.
-Use a tested backup method appropriate to the selected configuration.
+Do not assume copying a live database is sufficient.
+Use a tested method appropriate to the configuration.
 
-Backups must not be committed or submitted to an AI provider.
+Never commit backups or submit them to AI providers.
 
-## 9. Restore Procedure
+## 10. Restore
 
-Exact commands: Pending implementation and rehearsal.
+Exact commands remain pending.
 
 1. Stop only Quiniela-Bot.
-2. Preserve the current database for investigation.
-3. Select a verified backup and compatible application release.
+2. Preserve current data for investigation.
+3. Choose a verified backup and compatible application release.
 4. Restore using the tested procedure.
-5. Validate schema and committed business state.
-6. Review potential loss of actions recorded after the backup.
-7. Review pending announcements and possible duplicate publication.
-8. Start one process and perform smoke checks.
-9. Record the recovery and any reconciliation required.
+5. Validate schema and business state.
+6. Identify actions potentially lost since the backup.
+7. Review announcement replay and duplicate-delivery risks.
+8. Start one process and run checks.
+9. Document reconciliation and inform administrators when required.
 
-Do not silently treat restored older state as current.
-Recovery may require an administrator-facing explanation.
+Do not silently present older restored state as current.
 
-## 10. Rollback Procedure
+## 11. Rollback
 
-Exact commands: Pending release design.
+Exact commands remain pending.
 
 Before rollback:
-- Determine whether the previous application supports the current schema.
-- Preserve current data and diagnostic information.
-- Identify any actions committed after deployment.
+- Check previous application compatibility with the current schema.
+- Preserve data and diagnostics.
+- Identify actions committed after deployment.
 
-Do not assume application rollback also reverses a migration.
-Do not restore an old backup without reviewing resulting data loss.
+Application rollback does not automatically reverse migrations.
+An older backup may lose committed actions.
 
-Use only a documented and rehearsed rollback path.
+Use a rehearsed recovery path.
 
-## 11. Incident Handling
+## 12. Incident Handling
 
 ### Startup Failure
-- Preserve the database.
-- Inspect sanitized diagnostics locally.
-- Verify configuration, migration state, and dependency compatibility.
-- Do not expose secrets to an AI provider.
+Preserve data.
+Inspect sanitized diagnostics locally.
+Check configuration, dependencies, and migrations.
 
-### Telegram Delivery Failure
-- Preserve committed business state.
-- Retry stored announcement intent when delivery is available.
-- Do not redraw or repeat an outcome.
+### Delivery Failure
+Retain business state.
+Retry stored announcement intent.
+Do not redraw or repeat outcomes.
 
-### Authorization Verification Failure
-- Reject privileged mutations.
-- Restore verification before accepting administrative actions.
+### Authorization Failure
+Reject privileged mutations until verification is restored.
 
 ### Incorrect Confirmed Outcome
-- Do not edit database records manually.
-- No supported correction exists in the first implementation.
-- Explain the limitation and stop further outcome entry if necessary.
-- Cancellation closes the quiniela; it does not repair the result.
+Do not manually edit database records.
+Explain the unsupported correction limitation.
+Pause further outcome entry if needed.
+Cancellation closes the quiniela but does not repair the result.
 
-### Suspected Token Exposure
-- Treat the credential as compromised.
-- Replace it through the provider's verified credential-management process.
-- Update protected runtime configuration.
-- Investigate exposure without copying the credential into documentation.
+### Suspected Credential Exposure
+Treat the credential as compromised.
+Replace it through the provider's verified management process.
+Update protected configuration and investigate exposure.
 
-### Impact on Existing Bot
-- Stop Quiniela-Bot if needed to protect the existing service.
-- Investigate resource use and isolation before restarting.
+### Existing Bot Disruption
+Stop Quiniela-Bot if needed to protect the existing service.
+Resolve isolation or resource problems before restarting.
 
-## 12. Operational Records
+## 13. Operational Records
 
-For deployments and incidents, record:
+Record:
 - Date and responsible person.
 - Release commit.
-- Action performed.
-- Checks and outcomes.
+- Action and verification results.
 - Data-loss or reconciliation concerns.
-- Follow-up tasks.
+- Follow-up work.
 
-Keep operational records free of secrets and unnecessary personal data.
+Exclude secrets and unnecessary personal information.
 
 ## Document Boundary
 
-Commands and procedures remain unverified until explicitly recorded
-and rehearsed. This document does not authorize deployment.
+Deployment, backup, restore, and rollback commands remain unverified.
+This document does not authorize infrastructure changes.

@@ -1,125 +1,111 @@
- # Project Checkpoint
+# Project Checkpoint
 
 ## Current Stage
 
-Documentation foundation complete through Batch 3.
-Batch 4 operational documents are being prepared.
+Documentation batches 1 through 4 passed earlier consistency reviews.
 
-Application implementation has not started.
-No deployment or infrastructure changes have been performed as part
-of this documented workflow.
+The minimal local Python scaffold is implemented.
+Its three smoke tests, lint, and formatting checks passed.
 
-## Completed Documentation
+Documentation reconciliation edits are complete.
+Final review and scaffold commit are pending.
 
-- README.md
-- AGENTS.md
-- docs/requirements.md
-- docs/architecture.md
-- docs/decisions.md
-- docs/user-flows.md
-- docs/backlog.md
-- docs/test-plan.md
-- docs/risks.md
+No OCI changes or Telegram connections have been performed.
 
-Batch 3 documentation review reported no remaining contradictions
-or critical omissions.
+## Completed Work
 
-## Current Batch
+- Requirements and accepted MVP decisions.
+- Architecture and user flows.
+- Backlog, test plan, and risks.
+- Operational planning runbook.
+- Environment inventory and approved tooling.
+- pyproject.toml and .python-version.
+- Generated uv.lock and local .venv.
+- Minimal application package.
+- Three environment smoke tests.
 
-Batch 4:
-- docs/runbook.md
-- docs/checkpoint.md
+## Verified Local Results
 
-Status: Created; review and commit pending.
+- Python 3.12.10.
+- python-telegram-bot 22.8.
+- pytest 8.4.2.
+- Ruff 0.17.6.
+- Three tests collected and passed.
+- Source lint passed.
+- Source formatting passed.
+- .venv ignored by Git.
 
-## Accepted Scope
-
-- Telegram groups first.
-- English repository and documentation.
-- Mexican Spanish bot interface.
-- Python on existing Oracle OCI infrastructure.
-- Independent runtime from the existing bot.
-- SQLite and one application process.
-- One non-terminal quiniela per group.
-- 2 to 32 teams; powers of two not required.
-- One participant per Telegram user ID per quiniela.
-- No withdrawals or substitutions.
-- Automatic immutable draw when capacity is reached.
-- Administrator-controlled advancement and elimination.
-- Current Telegram owner and all current administrators are authorized.
-- Initiator-only confirmation with 10-minute expiry.
-- Business-state version checks and duplicate protection.
-- Cancellation only in DRAFT, OPEN, and ACTIVE.
-- Stored announcement intent and safe delivery retries.
-- No result correction in the first implementation.
-
-See docs/decisions.md for the authoritative decision details.
+These are environment checks, not product acceptance tests.
 
 ## Not Implemented
 
-- Application scaffold.
-- Dependencies and test commands.
-- Database schema or migrations.
-- Domain services.
-- Telegram handlers.
-- Deployment configuration.
-- Backup and restore tooling.
+- Configuration validation.
+- Database schema and migrations.
+- Domain validation and lifecycle services.
+- Registration and drawing.
+- Authorization and confirmations.
+- Outcomes and cancellation.
+- Telegram interface.
+- Announcement recovery.
+- Deployment, backup, and restore.
 
-## Verification Record
+## Current Task
 
-- Documentation review: Batch 3 passed.
-- Application tests: Not run; application does not exist yet.
+Run the final documentation consistency review.
+If it passes, review staged changes and commit the scaffold.
+
+Current scaffold changes are not yet committed.
+Git history is the authority for completed commits.
+
+## Next Implementation Task
+
+Complete the remaining configuration-validation portion of F-03.
+
+Before coding:
+- Define the minimal configuration contract.
+- Define acceptance tests.
+- Confirm the scope in a bounded planning task.
+
+Use synthetic configuration.
+Do not create or read real tokens.
+Do not connect to Telegram or modify OCI.
+
+After F-03, proceed to F-04: schema and initial migration.
+
+## Backlog Status
+
+- F-01: Initial inventory gathered; deployment checks remain open.
+- F-02: Tooling selected and locally verified.
+- F-03: Minimal scaffold complete; configuration validation remains.
+- F-04 and later: Not started.
+
+## Remaining Decisions
+
+- Commands and button layout.
+- OCI capacity validation and systemd service configuration.
+- Retention and deletion.
+- Real-participant acceptance of the correction limitation.
+- Deadline and weekly availability.
+
+## Operational Verification
+
+- Product acceptance tests: Not performed.
 - Deployment checks: Not performed.
 - Backup restore: Not performed.
 - Private-group rehearsal: Not performed.
 
-Do not interpret documentation approval as implementation verification.
+## Session Handoff
 
-## Open Decisions
-
-- Python version and Telegram library.
-- OCI capacity and deployment supervisor.
-- Final commands and button layout.
-- Retention and deletion policy.
-- Real-participant acceptance of the correction limitation.
-- Deadline and weekly development availability.
-
-## Next Task
-
-Review and commit Batch 4.
-
-After approval:
-Start F-01 from docs/backlog.md: sanitized environment inventory.
-
-Gather only:
-- Operating system.
-- Python version.
-- Existing Telegram library and version.
-- Existing deployment method.
-- Available runtime capacity.
-
-Do not read or submit secrets, production databases, or chat records.
-Do not modify the existing bot.
-
-## Last Confirmed Commit
-
-Not recorded here.
-
-The operator should record the relevant commit after verifying it locally.
-Do not invent a commit identifier.
-
-## Session Handoff Rules
-
-Update this file with:
+Update:
 - Last completed task.
 - Current task and blocker.
-- Actual checks performed.
+- Actual checks and results.
 - Next bounded action.
 
-Keep it concise.
-Do not paste full logs, secrets, participant records, or repeated plans.
+Do not include secrets, live records, or full logs.
+Do not invent commit identifiers.
 
 ## Document Boundary
 
-This file summarizes progress.
-Requirements and decisions remain authoritative in their own documents.
+This checkpoint summarizes progress.
+Requirements and decisions remain authoritative.

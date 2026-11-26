@@ -2,57 +2,48 @@
 
 ## 1. Purpose
 
-Provide a simple Telegram-group workflow for recreational quinielas
-in which each participant receives a randomly assigned tournament team.
+Manage recreational team-assignment quinielas in Telegram groups.
 
-The owner/admin controls tournament outcomes.
-The bot controls registration, assignments, persistence, and status updates.
+Participants receive randomly assigned teams.
+The owner/admin determines advancement and elimination.
+The bot manages registration, assignments, persistence, and announcements.
 
-## 2. Actors
+## 2. Actors and Authorization
 
 ### Group Member
+Can register for an open quiniela and view public status.
 
-Can join an open quiniela and view its public status.
+### Group Owner or Administrator
+Can configure quinielas, open registration, record outcomes, and cancel.
 
-### Group Owner or Authorized Administrator
-
-Can configure the quiniela, open registration, record outcomes,
-and cancel a non-terminal quiniela.
-
-Accepted MVP authorization policy:
-- The current Telegram group owner and current group administrators
-  are authorized.
-- There is no separate bot-managed administrator list.
-- Telegram group-role changes determine authorization.
-- Administrative actions require an identifiable acting user.
-- Authorization is checked for each privileged action, including
-  final confirmation.
+Authorization policy:
+- Current Telegram group owner and all current administrators are authorized.
+- No separate bot-managed administrator list.
+- Administrative actions require an identifiable actor.
+- Check current authorization for every privileged action and confirmation.
 - If authorization cannot be verified, no state is changed.
 
 ### Bot
+Validates actions, stores state, performs assignments, and publishes updates.
 
-Validates actions, stores state, assigns teams, and publishes updates.
+## 3. MVP Boundaries and Lifecycle
 
-## 3. MVP Boundaries
-
-- Group-based interaction.
+- Telegram groups.
 - One non-terminal quiniela per group.
-- Support for 2 to 32 teams inclusive.
+- Between 2 and 32 teams.
 - Team count determines participant capacity.
 - Powers of two are not required.
-- The primary acceptance scenario has eight teams.
-- No football rankings, fixed brackets, or sport-specific rules required.
+- One participant registration per Telegram user ID per quiniela.
 - No withdrawals, substitutions, or repeated draws.
-- No payments or prize handling.
 
-Lifecycle:
-- DRAFT: team configuration.
-- OPEN: registration available.
-- ACTIVE: assignments stored; outcomes may be recorded.
+States:
+- DRAFT: configure title and teams.
+- OPEN: teams locked; registration available.
+- ACTIVE: assignments committed; outcomes available.
 - COMPLETED: exactly one active team remains.
-- CANCELLED: the entire quiniela has been closed.
+- CANCELLED: entire quiniela closed.
 
-COMPLETED and CANCELLED are terminal states.
+COMPLETED and CANCELLED are terminal.
 
 ## 4. Functional Requirements
 
@@ -60,273 +51,240 @@ COMPLETED and CANCELLED are terminal states.
 
 Priority: Must
 
-An authorized administrator can create a draft quiniela with a title.
+An authorized administrator creates a draft with a title.
 
 Acceptance:
-- A second non-terminal quiniela cannot be created in the same group.
-- Other groups have independent quiniela state.
-- A new quiniela does not overwrite historical records.
+- Reject a second non-terminal quiniela in the same group.
+- Isolate different groups.
+- Preserve historical quinielas.
 
 ### FR-02 — Configure Teams
 
 Priority: Must
 
-An authorized administrator can add and review teams before opening
-registration.
+An authorized administrator configures teams in DRAFT.
 
 Acceptance:
-- The team count must be between 2 and 32 inclusive.
-- Powers of two are not required.
-- Empty names are rejected.
-- Duplicate names, ignoring surrounding whitespace and letter case,
-  are rejected.
-- Teams cannot be changed after registration opens.
+- Accept 2 to 32 teams inclusive.
+- Do not require powers of two.
+- Reject empty names.
+- Reject duplicates ignoring surrounding whitespace and letter case.
+- Reject team changes after registration opens.
 
 ### FR-03 — Open Registration
 
 Priority: Must
 
-An authorized administrator can open registration after confirming
-the team list.
+An authorized administrator confirms the final team list.
 
 Acceptance:
-- The bot displays the final team list and capacity before confirmation.
-- Opening follows the shared administrative confirmation rules.
-- The team list becomes locked.
-- The bot publishes a Spanish registration message.
-- The message displays available slots and the no-withdrawal rule.
-- The message includes a Join button labeled in Mexican Spanish.
+- Show teams, capacity, and the no-withdrawal rule before confirmation.
+- Apply shared confirmation rules.
+- Transition to OPEN and lock teams.
+- Publish a Mexican Spanish registration message with a Join button.
 
 ### FR-04 — Register a Participant
 
 Priority: Must
 
-A group member can claim one available slot.
+A group member claims one available slot.
 
 Acceptance:
-- Identity is based on Telegram user ID, not username.
-- Duplicate registration does not consume another slot.
-- Full or closed registration rejects new entries.
-- Participant count never exceeds team count.
-- No withdrawal or substitution action is available.
-- Leaving the group does not free a registered slot.
-- Buttons from another or older quiniela cannot register the user
-  into the wrong quiniela.
+- Identify by Telegram user ID, not username.
+- Duplicate registration does not consume capacity.
+- Reject registration outside OPEN or when full.
+- Never exceed team count.
+- No withdrawal or substitution action.
+- Leaving the group does not release a slot.
+- Reject callbacks for the wrong group or quiniela.
 
 ### FR-05 — Draw Automatically
 
 Priority: Must
 
-The final successful registration triggers random team assignment.
+Final successful registration triggers the draw.
 
 Acceptance:
-- Each participant receives exactly one team.
-- Each team is assigned exactly once.
-- Final registration and assignment persistence are atomic.
-- Assignments cannot be rerolled or modified.
-- Repeated actions or restarts do not create another draw.
-- Assignments and announcement intent are stored before publication.
-- Failed announcements can be retried without changing assignments.
-- The quiniela becomes ACTIVE when assignments are committed.
+- Each participant receives one team.
+- Each team is assigned once.
+- Commit final registration, assignments, and ACTIVE transition atomically.
+- Assignments are immutable.
+- Repeated actions and restarts do not redraw.
+- Store announcement intent before publication.
+- Retry publication using stored assignments.
 
 ### FR-06 — Record an Outcome
 
 Priority: Must
 
-An authorized administrator records one completed elimination outcome
-at a time by identifying the advancing team and the eliminated team.
-
-The bot does not model individual matches or series.
+An authorized administrator selects the advancing and eliminated teams.
 
 Acceptance:
-- The quiniela must be ACTIVE.
-- Both teams belong to the current quiniela.
-- Both teams are still active.
-- The selected teams are different.
-- The bot displays the proposed outcome and affected participants.
-- Recording follows the shared administrative confirmation rules.
-- The advancing team remains active.
-- The other team and its participant are marked eliminated.
-- The confirming administrator and outcome are recorded.
-- A repeated confirmation does not apply the outcome twice.
-- Eliminated participants are not removed from the Telegram group.
+- Require ACTIVE.
+- Require two different active teams belonging to the quiniela.
+- Display teams and assigned participants before confirmation.
+- Apply shared confirmation rules.
+- Eliminate only the selected losing team and its participant.
+- Record the confirming administrator and outcome.
+- Repeated confirmation does not repeat elimination.
+- Never remove a participant from the Telegram group.
 
 The administrator is authoritative about sporting results.
-The bot does not verify fixtures, scores, or tournament tie-breakers.
+The bot does not model matches, verify fixtures, or calculate scores.
 
 ### FR-07 — Show Status
 
 Priority: Must
 
-Group members can view the quiniela state.
-
-Acceptance:
-- Before the draw: team list, registration count, and capacity.
-- After the draw: participant-to-team assignments.
-- During play: active and eliminated teams and participants.
-- After completion: the winning team and participant.
+Show:
+- Before drawing: teams, registration count, and capacity.
+- After drawing: assignments and active/eliminated status.
+- After completion: winning team and participant.
 - After cancellation: canceled status without deleting history.
 
 ### FR-08 — Complete the Quiniela
 
 Priority: Must
 
-The quiniela completes when exactly one team remains active.
+Complete when exactly one team remains active.
 
 Acceptance:
-- The remaining team's participant is the winner.
-- Further elimination actions are rejected.
-- Completion and the final outcome are committed together.
-- Announcement intent is stored before publishing the winner.
-- Announcement retries do not change the completed outcome.
+- Its assigned participant is the winner.
+- Commit completion with the final outcome.
+- Reject further outcomes.
+- Store announcement intent before publication.
+- Announcement retries do not change the winner.
 
 ### FR-09 — Cancel a Quiniela
 
 Priority: Must
 
-An authorized administrator can cancel the entire quiniela
-after explicit confirmation.
+An authorized administrator confirms whole-quiniela cancellation.
 
 Acceptance:
-- Cancellation follows the shared administrative confirmation rules.
-- Cancellation is permitted only in DRAFT, OPEN, or ACTIVE.
-- COMPLETED and CANCELLED quinielas cannot be canceled.
-- Cancellation is distinct from participant withdrawal.
-- Historical registrations, assignments, and outcomes remain stored.
-- Further registrations and outcomes are rejected.
-- Cancellation does not trigger a redraw or repair an outcome.
-- A new quiniela may subsequently be created as a distinct record.
+- Apply shared confirmation rules.
+- Allow only in DRAFT, OPEN, and ACTIVE.
+- Reject COMPLETED and CANCELLED.
+- Preserve registrations, assignments, and outcomes.
+- Reject subsequent registration and outcomes.
+- Cancellation is not withdrawal, correction, or redraw.
+- A later quiniela is a separate record.
 
 ### FR-10 — Result Correction Limitation
 
 Priority: Deferred
 
-The first implementation has no correction, direct-edit, or undo action
-for confirmed outcomes.
+No correction, direct editing, or undo of confirmed outcomes exists
+in the first implementation.
 
-An incorrect confirmed outcome cannot be repaired in this version.
-Cancellation is not a result correction.
+Before real-participant use:
+- Explicitly accept this limitation; or
+- Implement an approved and tested correction workflow.
 
-Release gate:
-- Before use with real participants, explicitly approve this limitation
-  or implement a separately designed and tested correction workflow.
+Cancellation does not repair an outcome.
 
 ## 5. Administrative Confirmation Rules
 
-These rules apply to registration opening, outcome recording,
-and cancellation.
+Apply to opening, outcomes, and cancellation.
 
 - Only the initiating administrator may confirm.
-- Recheck current authorization at confirmation.
-- Confirmations expire 10 minutes after creation.
-- A confirmation is expired at or after its expiration timestamp.
-- Reject consumed confirmations without repeating their mutation.
-- Reject confirmations if the business-state version changed.
-- Stale or expired actions must be initiated again.
+- Recheck current authorization.
+- Expire 10 minutes after creation.
+- Reject at or after expiration.
+- Reject consumed confirmations without repeating mutations.
+- Reject changed business-state versions.
+- Require re-initiation after expiration or staleness.
 
-Business-state changes include:
-- Title or team-list changes.
-- Lifecycle transitions.
-- Successful registrations and the automatic draw.
+Initialize a quiniela at version 1.
+
+Increment once per successful transaction changing existing business state:
+- Title or team list.
+- Lifecycle.
+- Registrations and assignments.
 - Confirmed outcomes.
 - Cancellation.
 
-Creating a pending action, viewing status, recording delivery attempts,
-and retrying announcements do not change the business-state version.
-
-A successful transaction that changes business state increments
-the version once.
+Do not increment for:
+- Pending-action creation.
+- Status views.
+- Delivery attempts or announcement retries.
+- Rejected, failed, rolled-back, or duplicate actions.
 
 ## 6. Non-Functional Requirements
 
 ### NFR-01 — Authorization
-
-Validate the acting user's administrative authorization for every
-privileged action and confirmation.
+Verify current administrative authority for privileged actions.
 
 ### NFR-02 — Isolation
-
-Every operation must be scoped to the relevant group and quiniela.
+Scope all operations to the correct group and quiniela.
 
 ### NFR-03 — Persistence
+Committed state survives restarts.
 
-Committed registrations, assignments, and outcomes survive restarts.
-
-### NFR-04 — Concurrency and Duplicate Handling
-
-Concurrent requests and repeated Telegram interactions must not
-produce extra participants, redraws, or repeated eliminations.
+### NFR-04 — Concurrency and Duplicates
+Prevent extra registrations, redraws, and repeated eliminations.
 
 ### NFR-05 — Privacy
-
-Store only the data required to operate and audit the quiniela.
+Store only necessary operational and audit data.
 Do not store full chat histories.
+Approve retention and deletion before real-participant use.
 
-Approve retention and deletion rules before a real-participant pilot.
-
-### NFR-06 — Spanish Interface
-
-All actual user-facing messages and buttons use Mexican Spanish.
-Repository documentation and code identifiers use English.
+### NFR-06 — Language
+Actual bot messages and buttons use Mexican Spanish.
+Documentation and code identifiers use English.
 
 ### NFR-07 — Operational Independence
-
-Deployment must not modify or interfere with the existing OCI bot.
+Do not interfere with the existing OCI bot.
 
 ### NFR-08 — Maintainability
-
-Separate Telegram interaction, application/domain behavior, and storage.
+Separate Telegram interaction, application behavior, and persistence.
 
 ### NFR-09 — Announcement Recovery
-
-Committed state changes must include stored announcement intent
-when publication is required.
-
-Delivery retries must not repeat business actions.
-Exactly-once Telegram message delivery is not guaranteed.
+Store publication intent with relevant business transactions.
+Retries must not repeat business actions.
+Exactly-once Telegram delivery is not guaranteed.
 
 ## 7. Out of Scope
 
-- Sports-result APIs.
-- Score aggregation and tie-breakers.
-- Automatic bracket generation.
-- Predictions or points-based rankings.
-- Payments, betting, and prize management.
-- Withdrawals and participant substitutions.
-- Broadcast-channel support.
+- Payments, betting, and prizes.
+- Predictions and points-based scoring.
+- Sports APIs, score calculations, and tournament-rule interpretation.
+- Automatic brackets.
+- Withdrawals and substitutions.
+- Channels and web administration.
 - Runtime AI.
-- Web administration.
 - Result correction in the first implementation.
 
-## 8. End-to-End Acceptance Scenario
+## 8. Acceptance Scenario
 
-1. An administrator registers eight distinct teams.
-2. Registration opens for eight participants.
-3. Eight distinct users register.
-4. The eighth registration creates one persistent random assignment.
-5. The bot publishes all eight unique assignments.
-6. The administrator confirms seven valid elimination outcomes.
-7. Exactly one team and its participant remain.
-8. The bot announces the winner.
-9. A restart preserves the recorded state.
+1. Configure eight teams.
+2. Open eight registration slots.
+3. Register eight distinct users.
+4. Final registration creates eight unique persistent assignments.
+5. Publish assignments.
+6. Confirm seven valid elimination outcomes.
+7. Announce exactly one winner.
+8. Restart and verify preserved state.
 
-Negative scenarios:
-- Duplicate registration.
-- Concurrent attempts to claim the last slot.
-- Unauthorized administrative action.
-- Expired, stale, or consumed confirmation.
-- Outcome involving an already eliminated team.
-- Repeated draw or outcome callback.
-- Announcement failure after a committed state change.
-
-Rehearse cancellation separately from the completed-winner scenario.
+Also verify:
+- A complete three-team scenario.
+- Duplicate and concurrent registration handling.
+- Unauthorized, expired, stale, and repeated confirmations.
+- Rejection of foreign or eliminated teams.
+- Delivery failures without repeated business actions.
+- Cancellation separately in each permitted state.
 
 ## 9. Open Decisions
 
-- Python version and Telegram library.
-- Existing OCI capacity and deployment supervisor.
-- Acceptance of the correction limitation or implementation of a
-  correction workflow before real-participant release.
-- Data retention and deletion policy.
-- Exact commands and administrator interaction layout.
-- Delivery deadline and weekly development availability.
+- OCI capacity validation and systemd service configuration.
+- Correction limitation acceptance before real-participant use.
+- Retention and deletion.
+- Final commands and button layout.
+- Deadline and weekly development availability.
+
+Python 3.12, python-telegram-bot, uv, pytest, Ruff, and systemd
+are selected. See docs/decisions.md and docs/tooling.md.
+
+## Document Boundary
+
+This document defines required behavior, not implementation completion.

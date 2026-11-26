@@ -1,0 +1,1 @@
+"""Quiniela-Bot application package."""

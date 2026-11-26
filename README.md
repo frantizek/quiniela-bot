@@ -2,160 +2,139 @@
 
 A Telegram bot for recreational team-assignment quinielas.
 
-An administrator registers tournament teams and opens registration.
-When all participant slots are filled, the bot automatically assigns
-one random team to each participant.
+An administrator enters teams and opens registration.
+When registration fills, the bot randomly assigns one team per participant.
 
-The group owner or a current group administrator records which team
-advances and which team is eliminated. The bot updates the quiniela
-until one team and its assigned participant remain.
+The owner/admin records advancement and elimination.
+The bot tracks the quiniela until one participant wins.
 
-## Project Status
+## Status
 
-Documentation and planning.
+The initial local scaffold is implemented.
 
-Application code, dependency selection, and deployment configuration
-have not been implemented.
+Verified:
+- Python 3.12.10.
+- Three environment smoke tests passed.
+- Source lint and formatting passed.
 
-## MVP Scope
+Product behavior, persistence, Telegram integration, and deployment
+are not implemented.
+
+## MVP
 
 - Telegram groups.
 - One non-terminal quiniela per group.
-- Administrator-managed team list.
-- Support for 2 to 32 teams, including non-powers of two.
-- One participant slot per team.
-- One entry per Telegram user ID per quiniela.
-- No participant withdrawals or substitutions.
-- Automatic random assignment when registration is full.
-- Persistent, immutable assignments.
-- Administrator-confirmed advancement and elimination.
-- Administrator-confirmed cancellation before completion.
-- Status messages and winner announcement.
-- Persistent state across service restarts.
-- Recoverable announcements without repeating business actions.
+- 2 to 32 teams, including non-powers of two.
+- One participant per team.
+- One registration per Telegram user ID.
+- No withdrawals or substitutions.
+- Automatic immutable draw when full.
+- Administrator-confirmed elimination outcomes.
+- Cancellation before completion, preserving history.
+- Public status and winner announcements.
+- Persistent state and recoverable announcements.
 
-The primary acceptance scenario uses eight teams and eight participants.
-The implementation does not require team rankings or a fixed bracket.
+## Administrative Authority
 
-## Authority Over Results
-
-The group owner or a current group administrator determines which team
-advances and which team is eliminated.
-
-The bot validates the administrative action and records it.
-It does not calculate aggregate scores, apply tie-breakers, generate
-fixtures, or consult sports-result services.
-
-## Administrator Authorization
-
-The current Telegram group owner and all current group administrators
-are authorized to manage the quiniela.
-
+Current group owner and all current administrators are authorized.
 There is no separate bot-managed administrator list.
 
-Privileged actions require an identifiable acting user.
-Authorization is checked again before confirming a sensitive action.
-If authorization cannot be verified, no state is changed.
+Require identifiable actors and current-role verification.
 
-## Administrative Confirmations
+Administrators determine sporting results.
+The bot does not calculate scores, interpret rules, generate brackets,
+or consult sports APIs.
 
-Opening registration, recording outcomes, and cancellation require
-confirmation.
-
-- Only the initiating administrator may confirm.
-- Confirmations expire after 10 minutes.
-- Consumed confirmations cannot repeat an action.
-- A change to the quiniela's business-state version invalidates
-  an outstanding confirmation.
+Opening, outcomes, and cancellation require:
+- Initiator-only confirmation.
+- Current authorization recheck.
+- 10-minute expiration.
+- Business-state version checks.
+- Duplicate-action protection.
 
 ## Cancellation and Correction
 
-Administrators may cancel a quiniela in DRAFT, OPEN, or ACTIVE.
-Cancellation preserves history and closes the entire quiniela.
+Cancellation is allowed in DRAFT, OPEN, and ACTIVE.
+It is not a withdrawal, correction, or redraw.
 
-Cancellation is not a withdrawal, correction, or redraw.
-A later quiniela is a separate record.
-
-The first implementation does not support result correction.
-An incorrect confirmed outcome cannot be repaired in this version.
-
-Before use with real participants, explicitly accept this limitation
-or implement a separately designed and tested correction workflow.
+No result correction exists in the first implementation.
+Before real-participant use, explicitly accept this limitation
+or implement an approved and tested correction workflow.
 
 ## Language
 
-- Documentation, code identifiers, and developer comments: English.
-- User-facing Telegram messages and buttons: Mexican Spanish.
+- Documentation, identifiers, and developer comments: English.
+- Actual Telegram messages and buttons: Mexican Spanish.
 
-Documentation describes interface behavior in English.
-Actual Telegram messages and buttons will be implemented in Mexican Spanish.
+## Tooling
 
-## Accepted Technical Direction
+- Python 3.12.
+- uv and project-local .venv.
+- pyproject.toml and uv.lock.
+- python-telegram-bot initially pinned to 22.8.
+- pytest and Ruff.
+- Standard-library sqlite3 for planned persistence.
 
-- Python.
-- SQLite for initial persistent storage.
-- One application process initially.
-- Telegram long polling.
-- A separate service on the existing Oracle OCI infrastructure.
-- Stored announcement intent for delivery recovery.
+Repository policy requires tracking uv.lock in Git.
+Whether the current working changes are committed is determined
+by local Git status and history.
 
-The Python version, Telegram library, OCI capacity, and service
-configuration remain pending an inventory of the existing environment.
+Deployment direction: separate systemd service on OCI with polling.
+Service configuration and capacity validation remain open.
 
-The new bot must not modify or share runtime state with the existing bot.
+Do not modify the existing bot.
 
-## Out of Scope
+## Local Checks
 
-- Payments, betting, or prize management.
-- Prediction-based scoring.
-- Automatic sports-result retrieval.
-- Automatic interpretation of football rules.
-- Automatic bracket generation.
-- Telegram broadcast-channel support.
-- Participant withdrawals or substitutions.
-- Multiple non-terminal quinielas in the same group.
-- AI features inside the running bot.
-- A web dashboard.
-- Result correction in the first implementation, subject to an
-  explicit decision before real-participant release.
+From the repository root:
+
+    uv run --locked pytest -q
+    uv run --locked ruff check quiniela_bot tests
+    uv run --locked ruff format --check quiniela_bot tests
+
+Initial environment creation was performed with:
+
+    uv sync --python 3.12
+
+Future synchronization should preserve the reviewed lockfile:
+
+    uv sync --locked --python 3.12
+
+No Telegram token is needed for current tests.
+No bot startup command exists yet.
 
 ## Documentation
 
-### Foundation
-- AGENTS.md — AI-assisted development instructions.
-- docs/requirements.md — Product requirements and acceptance criteria.
+- AGENTS.md
+- docs/requirements.md
+- docs/architecture.md
+- docs/decisions.md
+- docs/user-flows.md
+- docs/backlog.md
+- docs/test-plan.md
+- docs/risks.md
+- docs/environment.md
+- docs/tooling.md
+- docs/runbook.md
+- docs/checkpoint.md
 
-### Design
-- docs/architecture.md — Components, lifecycle, and persistence.
-- docs/decisions.md — Accepted and unresolved decisions.
-- docs/user-flows.md — Telegram interaction behavior.
+## Exclusions
 
-### Delivery and Validation
-- docs/backlog.md — Implementation tasks and milestone gates.
-- docs/test-plan.md — Verification scenarios and release checks.
-- docs/risks.md — Risks, mitigations, and accepted trade-offs.
+No payments, predictions, sports APIs, score calculations, brackets,
+withdrawals, substitutions, channels, web dashboard, or runtime AI.
 
-### Planned Operations Documents
-- docs/runbook.md — Deployment, backup, restore, and recovery.
-- docs/checkpoint.md — Current progress and session handoff.
+## Security and Release Gates
 
-## Development Approach
-
-1. Confirm unresolved environment details.
-2. Implement domain rules and persistence tests.
-3. Add Telegram interactions incrementally.
-4. Rehearse the complete flow in a private test group.
-5. Complete operational and privacy release gates.
-6. Deploy independently from the existing bot.
-
-Work in small, reviewable changes.
-Do not add features outside the approved MVP without updating
-the requirements and decision log.
-
-## Security and Privacy
-
-Never commit or submit bot tokens, credentials, live databases,
+Never commit or submit secrets, live databases, backups,
 participant records, or production logs to an AI provider.
 
-Use synthetic data during development.
-Approve retention and deletion rules before a real-participant pilot.
+Use synthetic data.
+
+Before real-participant use:
+- Pass product tests and private rehearsal.
+- Demonstrate restore.
+- Verify deployment isolation.
+- Approve retention and deletion.
+- Resolve the correction release gate.
+
+Local scaffold success does not authorize deployment.

@@ -1,121 +1,130 @@
 # Agent Instructions
 
-## Project
+## Authority
 
-Quiniela-Bot is a Python Telegram bot for recreational
-team-assignment quinielas.
+Quiniela-Bot is a Python Telegram bot for recreational quinielas.
 
-Product authority:
-- docs/requirements.md defines required behavior.
-- docs/decisions.md records accepted and unresolved decisions.
+- docs/requirements.md defines product behavior.
+- docs/decisions.md records accepted decisions.
+- docs/tooling.md records the approved tooling baseline.
+- docs/checkpoint.md summarizes current progress.
 
-If documentation conflicts, report the conflict.
-Do not silently choose a new product rule.
+Report conflicts instead of silently choosing a new rule.
 
 ## Language
 
-- Write documentation, code identifiers, and developer comments in English.
-- Write actual user-facing Telegram messages and buttons in Mexican Spanish.
-- Describe interface behavior in English in documentation.
+Use English for documentation, identifiers, and developer comments.
+Use Mexican Spanish for actual Telegram messages and buttons.
+Describe interface behavior in English in documentation.
 
-## Scope Boundaries
+## Scope
 
-- The owner/admin determines which team advances and which is eliminated.
-- Do not implement score calculation, tie-breakers, fixtures,
-  sports APIs, payments, or runtime AI.
+- Owner/admin determines advancement and elimination.
+- No score calculation, football rules, fixtures, sports APIs,
+  payments, or runtime AI.
 - One non-terminal quiniela per group.
-- Support 2 to 32 teams; do not require powers of two.
-- One participant per Telegram user ID per quiniela.
+- Support 2 to 32 teams, including non-powers of two.
 - Participant capacity equals team count.
+- One registration per Telegram user ID per quiniela.
 - No withdrawals or substitutions.
-- Draw automatically when registration becomes full.
-- Persist assignments; never redraw an existing quiniela.
-- Elimination changes participation status, not Telegram membership.
+- Draw automatically when full.
+- Persist assignments; never redraw or edit them.
+- Elimination does not remove participants from Telegram.
 - Cancellation is allowed only in DRAFT, OPEN, or ACTIVE.
-- Preserve canceled quiniela history.
-- Do not implement result editing or undo without an approved scope change.
+- Preserve cancellation history.
+- No result editing or undo without an approved scope change.
 
 ## Authorization and Confirmation
 
-- Current Telegram owner and all current administrators are authorized.
-- There is no separate bot-managed administrator list.
-- Reject administrative actions without an identifiable actor.
+- Current group owner and all current administrators are authorized.
+- No separate authorized-user list.
+- Require identifiable administrative actors.
 - Check current authorization for every privileged action.
 - Recheck authorization at confirmation.
-- Fail closed if authorization cannot be verified.
+- Fail closed if verification is unavailable.
 - Only the initiating administrator may confirm.
-- Confirmations expire after 10 minutes.
-- Reject consumed or stale confirmations without repeating a mutation.
-- Follow the business-state version rules in D-011.
+- Expire confirmations after 10 minutes.
+- Reject consumed, expired, or stale confirmations.
+- Follow D-011 for business-state version behavior.
 
-## Technical Direction
+## Tooling
 
-- Python.
-- SQLite with explicit transactions and uniqueness constraints.
-- One application process initially.
-- Telegram long polling.
-- Separate OCI service, token, environment, and database.
-- Persist announcement intent alongside committed business changes.
+- Python 3.12.
+- uv with pyproject.toml, uv.lock, and .venv.
+- python-telegram-bot, initially pinned to 22.8.
+- pytest and Ruff.
+- Standard-library sqlite3 for persistence.
+- One application process.
+- Separate OCI service with long polling.
 
-Do not assume the Python version, Telegram library, OCI capacity,
-or deployment supervisor. These remain open until verified.
+Do not independently maintain requirements.txt.
+Do not change dependencies or the lockfile without an explicit task.
+
+OCI paths, runtime user, capacity validation, and service configuration
+remain unresolved. Do not infer deployment readiness.
 
 ## Working Rules
 
-- Read only documentation and files relevant to the current task.
-- Do not scan the entire repository unless necessary.
-- Complete one small task at a time.
-- State assumptions and unresolved decisions explicitly.
-- Do not introduce dependencies without explaining the need.
-- Prefer straightforward code over speculative abstractions.
-- Do not implement features during documentation-only tasks.
+- Read only files relevant to the current task.
+- Avoid repository-wide scans and agent fan-out.
+- Complete one bounded task at a time.
+- Split large tasks before implementation.
+- State assumptions and blockers.
+- Prefer simple code over speculative abstractions.
+- Do not implement code during documentation-only tasks.
 - Do not commit, push, deploy, or modify infrastructure without approval.
 - Do not modify the existing bot or its runtime resources.
 
 ## Security
 
-- Never read .env files, tokens, private keys, live databases,
+- Never read secrets, .env files, private keys, live databases,
   backups, or production logs.
-- Do not request real participant data.
-- Use synthetic fixtures.
-- Scope all operations to the originating group and quiniela.
-- Keep secrets and unnecessary personal data out of logs.
+- Use synthetic test data.
+- Scope operations to the correct group and quiniela.
 - Validate callbacks against stored state.
-- Never treat callback payloads as authoritative business records.
+- Do not trust callback payloads as business records.
+- Keep secrets and unnecessary personal data out of logs.
 
-## Correctness Priorities
+## Correctness
 
-- Enforce participant and assignment uniqueness in storage.
-- Make final registration and draw persistence atomic.
-- Make repeated callbacks and confirmations safe.
-- Store results and announcement intent before sending messages.
-- Preserve state across restarts.
-- Announcement retries must not redraw or repeat eliminations.
-- Do not promise exactly-once Telegram message delivery.
-- Do not silently overwrite recorded results.
+- Enforce uniqueness in storage.
+- Commit final registration and assignments atomically.
+- Handle repeated and concurrent actions safely.
+- Persist state and announcement intent before sending messages.
+- Recovery must not repeat draws or outcomes.
+- Do not promise exactly-once Telegram delivery.
+- Do not silently overwrite confirmed results.
 
-## Verification
+## Local Checks
 
-Implementation tasks must include tests for changed behavior.
-Never claim a check passed unless it was actually run.
+Run from the repository root:
 
-Build and test commands are not yet defined.
-Document them after project tooling is selected.
+- uv run --locked pytest -q
+- uv run --locked ruff check quiniela_bot tests
+- uv run --locked ruff format --check quiniela_bot tests
 
-## Release Boundaries
+For collection diagnostics:
+- uv run --locked pytest --collect-only -q
 
-Before use with real participants:
-- Approve retention and deletion rules.
-- Demonstrate backup and restore.
+These commands passed for the initial three-test scaffold.
+
+Implementation tasks require tests for changed behavior.
+Never claim a check passed unless it was executed.
+
+## Release Gates
+
+Before real-participant use:
+- Approve retention and deletion.
+- Demonstrate backup restore.
 - Verify deployment isolation.
 - Pass a private-group rehearsal.
-- Explicitly accept the correction limitation or implement
-  an approved and tested correction workflow.
+- Accept the correction limitation explicitly or implement
+  approved and tested correction behavior.
 
-## Task Completion Summary
+## Completion Summary
 
 Report briefly:
 1. Files changed.
 2. Behavior or documentation added.
-3. Checks performed and their outcomes.
-4. Remaining blockers or decisions.
+3. Actual checks and results.
+4. Remaining blockers and next bounded action.

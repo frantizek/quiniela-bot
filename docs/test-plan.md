@@ -1,130 +1,152 @@
 # Test Plan
 
-Status: Initial verification plan.
-Framework and test commands remain to be selected.
+Status: Environment smoke tests passed; product verification remains planned.
 
-## 1. Strategy
+## 1. Tooling and Commands
+
+Use pytest, temporary SQLite databases, and mocked Telegram responses.
+
+From the repository root:
+
+- uv run --locked pytest --collect-only -q
+- uv run --locked pytest -q
+- uv run --locked ruff check quiniela_bot tests
+- uv run --locked ruff format --check quiniela_bot tests
+
+Current verification:
+- Three environment tests collected and passed.
+- Source lint passed.
+- Source formatting passed.
+
+No product acceptance tests have run.
+
+## 2. Strategy
 
 Use:
 1. Domain unit tests without Telegram.
-2. SQLite integration tests with temporary databases.
-3. Telegram adapter tests with mocked API responses.
-4. A private-group end-to-end rehearsal.
+2. SQLite integration tests.
+3. Mocked Telegram adapter tests.
+4. Private-group rehearsal.
 
-Use synthetic users and teams.
-Do not use production databases or chat histories.
+Use synthetic data and controllable clocks.
+Use deterministic randomness fixtures where appropriate.
 
-Use controllable clocks for expiration tests.
-Use controllable randomness for deterministic fixtures.
+Verify valid, immutable assignment permutations.
+Do not claim statistical fairness or independent public verifiability.
 
-Draw tests verify valid permutations and immutability.
-They do not establish independent public verifiability or statistical fairness.
+## 3. Environment Smoke Tests
 
-## 2. Core Behavior
+Implemented in tests/test_environment.py:
+
+- Project interpreter uses Python 3.12.
+- Application package imports.
+- Telegram dependency matches the initial 22.8 pin.
+
+These tests do not validate business behavior.
+Update the version assertion during an approved dependency upgrade.
+
+## 4. Planned Core Tests
 
 | ID | Scenario | Expected result |
 |---|---|---|
-| T-01 | Different groups | Independent quiniela state |
-| T-02 | Second non-terminal quiniela in one group | Rejected |
-| T-03 | Team counts 1, 2, 3, 8, 32, 33 | Only 2 through 32 accepted |
+| T-01 | Different groups | Independent state |
+| T-02 | Second non-terminal quiniela | Rejected in the same group |
+| T-03 | Counts 1, 2, 3, 8, 32, 33 | Only 2 through 32 accepted |
 | T-04 | Empty or duplicate normalized names | Rejected |
 | T-05 | Team edits after opening | Rejected |
-| T-06 | Duplicate user registration | No extra participant |
+| T-06 | Duplicate registration | No additional participant |
 | T-07 | Same user in different groups | Allowed |
-| T-08 | Concurrent final-slot requests | Capacity never exceeded |
+| T-08 | Concurrent final-slot requests | Capacity not exceeded |
 | T-09 | Final registration | Complete unique assignments |
-| T-10 | Draw transaction failure | No partial final registration or assignments |
-| T-11 | Restart after draw | Original assignments preserved |
-| T-12 | Repeated registration callback | No redraw |
+| T-10 | Draw transaction failure | No partial registration or draw |
+| T-11 | Restart after draw | Original assignments retained |
+| T-12 | Repeated callback | No redraw |
 | T-13 | Identical outcome teams | Rejected |
 | T-14 | Foreign or eliminated outcome team | Rejected |
 | T-15 | Valid outcome | One team eliminated |
-| T-16 | Final valid outcome | Exactly one winner; COMPLETED |
+| T-16 | Final outcome | One winner and COMPLETED |
 | T-17 | Outcome outside ACTIVE | Rejected |
-| T-18 | Cross-quiniela record references | Rejected |
+| T-18 | Cross-quiniela references | Rejected |
 | T-19 | Concurrent outcomes sharing a team | At most one valid mutation |
-| T-20 | Full 32-participant draw | 32 unique assignments |
+| T-20 | 32-participant draw | 32 unique assignments |
 
-## 3. Authorization and Confirmation
+## 5. Planned Authorization Tests
 
-| ID | Scenario | Expected result |
-|---|---|---|
-| A-01 | Current owner or administrator | Authorized |
-| A-02 | Ordinary member performs privileged action | Rejected |
-| A-03 | Unidentified administrative actor | Rejected |
-| A-04 | Authorization lookup fails | No mutation |
-| A-05 | Administrator loses role before confirmation | Rejected |
-| A-06 | Different administrator confirms | Rejected |
-| A-07 | Before expiration | Eligible if other checks pass |
-| A-08 | At or after expiration | Rejected |
-| A-09 | Business-state version changed | Stale; rejected |
-| A-10 | Consumed confirmation reused | No repeated mutation |
-| A-11 | Concurrent confirmation requests | At most one mutation |
-| A-12 | Wrong group or quiniela callback | Rejected |
+- Current owner and administrators are authorized.
+- Ordinary members cannot perform privileged actions.
+- Unidentified actors and lookup failures cause no mutation.
+- Lost administrator role prevents confirmation.
+- A different administrator cannot confirm.
+- Confirmations are eligible before expiration, subject to other checks.
+- Confirmation at or after expiration is rejected.
+- Stale or consumed confirmations do not mutate state.
+- Concurrent confirmations produce at most one mutation.
+- Wrong-group and wrong-quiniela callbacks are rejected.
 
-Apply confirmation checks to opening, outcomes, and cancellation.
+Apply these checks to opening, outcomes, and cancellation.
 
-## 4. Business-State Version
+## 6. Planned Business-Version Tests
 
-| ID | Scenario | Expected result |
-|---|---|---|
-| V-01 | Create quiniela | Version initialized to 1 |
-| V-02 | Change title or team list | Increment once per successful transaction |
-| V-03 | Open registration | Increment exactly once |
-| V-04 | Register before capacity | Increment exactly once |
-| V-05 | Final registration plus draw and ACTIVE transition | Increment exactly once |
-| V-06 | Confirm ordinary outcome | Increment exactly once |
-| V-07 | Confirm final outcome plus COMPLETED transition | Increment exactly once |
-| V-08 | Cancel quiniela | Increment exactly once |
-| V-09 | Create pending action | Version unchanged |
-| V-10 | View status | Version unchanged |
-| V-11 | Record delivery attempt | Version unchanged |
-| V-12 | Retry announcement | Version unchanged |
-| V-13 | Reject, roll back, or repeat action | Version unchanged |
+- New quiniela initializes at version 1.
+- Title and team changes increment once per successful transaction.
+- Opening increments exactly once.
+- Registration increments exactly once.
+- Final registration, draw, and ACTIVE transition increment once together.
+- Ordinary outcome increments exactly once.
+- Final outcome and COMPLETED transition increment once together.
+- Cancellation increments exactly once.
 
-Verify that V-09 through V-12 do not make an otherwise valid
-confirmation stale.
+Version remains unchanged for:
+- Pending-action creation.
+- Status views.
+- Delivery attempts.
+- Announcement retries.
+- Rejected, rolled-back, failed, or duplicate actions.
 
-## 5. Cancellation
+Non-mutating operations must not invalidate otherwise valid confirmations.
 
-- Succeeds from DRAFT, OPEN, and ACTIVE after valid confirmation.
-- Rejects COMPLETED and CANCELLED.
-- Preserves registrations, assignments, and outcomes.
-- Rejects subsequent registration and outcomes.
-- Allows a distinct new quiniela without overwriting history.
-- Does not withdraw participants or trigger a redraw.
+## 7. Planned Cancellation Tests
 
-## 6. Excluded Actions
+- Confirmed cancellation succeeds in DRAFT, OPEN, and ACTIVE.
+- COMPLETED and CANCELLED reject cancellation.
+- Historical records remain stored.
+- Registration and outcomes are rejected after cancellation.
+- A new quiniela does not overwrite history.
+- Cancellation does not redraw or repair a result.
 
-Verify that:
-- No participant withdrawal or substitution command/callback exists.
-- No assignment reroll or editing action exists.
-- No confirmed-outcome correction, direct-edit, or undo action exists.
-- Unsupported or fabricated callbacks do not mutate records.
-- No sporting-result calculation or external sports lookup is invoked.
+## 8. Planned Exclusion Tests
 
-## 7. Persistence and Announcements
+Verify no supported action exists for:
+- Withdrawal or substitution.
+- Assignment editing or reroll.
+- Outcome correction, editing, or undo.
+
+Fabricated callbacks must not mutate records.
+
+Verify no sports lookup or sporting-result calculation is invoked.
+Elimination must never remove a participant from Telegram.
+
+## 9. Planned Persistence and Recovery Tests
 
 - Business mutation, audit, and announcement intent commit together.
-- Failed transactions leave no partial mutation.
-- Failed publication does not undo or repeat business state.
+- Failed transactions leave no partial state.
+- Failed publication does not undo or repeat business actions.
 - Restart retries pending announcements.
-- Interrupted sends with uncertain delivery do not repeat mutations.
-- Backup restore preserves lifecycle, assignments, and outcomes.
+- Uncertain delivery does not repeat mutations.
 - Consumed confirmations remain consumed after restart.
+- Backup restore preserves lifecycle, assignments, and outcomes.
 
-## 8. Interface
+## 10. Planned Interface Checks
 
-- Actual bot messages and buttons use Mexican Spanish.
+- Actual messages and buttons use Mexican Spanish.
 - User-controlled names render safely.
 - Capacity and no-withdrawal rules are clear.
-- Outcome confirmation identifies both teams and participants.
-- Rejection messages explain stale, expired, and unauthorized actions.
-- Elimination never removes a participant from the group.
+- Outcome confirmation identifies teams and participants.
+- Rejection feedback explains the relevant failure.
 
-## 9. End-to-End Scenarios
+## 11. End-to-End Scenarios
 
-### Eight-Team Primary Scenario
+### Eight Teams
 
 1. Configure eight teams.
 2. Register eight distinct participants.
@@ -135,36 +157,33 @@ Verify that:
 7. Restart and verify completed state.
 8. Attempt repeated and unauthorized actions.
 
-### Three-Team Non-Power-of-Two Scenario
+### Three Teams
 
 1. Configure three teams.
-2. Register three distinct participants.
+2. Register three participants.
 3. Verify three unique assignments.
-4. Confirm one valid elimination.
-5. Confirm a second valid elimination between remaining teams.
+4. Confirm one elimination.
+5. Confirm an elimination between the remaining teams.
 6. Verify one winner and COMPLETED.
 
-The bot does not require bracket rounds or power-of-two team counts.
+No bracket rounds or power-of-two constraint are required.
 
-### Cancellation Scenario
+### Cancellation
 
 Rehearse cancellation separately in DRAFT, OPEN, and ACTIVE.
-Verify preserved history and rejection of subsequent actions.
 
-## 10. Release Gates
+## 12. Release Gates
 
 Before real-participant use:
-- Critical automated checks pass.
+- Critical automated tests pass.
 - Private-group rehearsal passes.
-- Backup restore is demonstrated.
+- Restore is demonstrated.
 - Deployment isolation is verified.
-- Retention and deletion rules are approved.
-- Correction limitation is explicitly accepted or correction is tested.
+- Retention and deletion are approved.
+- Correction limitation is accepted or correction is tested.
 - No secrets or live records are committed.
-
-Record checks as passed only after execution.
 
 ## Document Boundary
 
-This document defines planned verification.
-It does not claim that any test has already run.
+Only the environment smoke tests and tooling checks are currently passed.
+All product and operational checks above remain planned.
