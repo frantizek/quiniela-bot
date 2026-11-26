@@ -3,12 +3,15 @@
 ## Current Stage
 
 The initial documentation and local scaffold are complete.
-
 The baseline was published to GitHub.
-Development workflow setup is in progress on its own branch.
+
+Workflow setup is verified on chore/development-workflow:
+commit e2484b6 was pushed and PR #1 is open, not merged.
+GitHub CI check "Python quality" completed successfully.
+Main protection was applied and verified.
 
 No configuration-validation implementation, Telegram connection,
-or OCI modification has been performed.
+or OCI deployment has occurred.
 
 ## Repository Baseline
 
@@ -17,6 +20,8 @@ or OCI modification has been performed.
 - Default intended branch: main.
 - Published scaffold commit: d70a4d3.
 - Current task branch: chore/development-workflow.
+- Pushed workflow commit: e2484b6.
+- Workflow PR: #1, open and not merged.
 
 The current branch and working state must be verified locally
 before subsequent operations.
@@ -37,9 +42,10 @@ They do not establish the results of the current branch's checks.
 
 ## Current Task
 
-Introduce the development workflow through a pull request.
+Record verified workflow setup in documentation.
 
-Files prepared:
+Workflow files were prepared on chore/development-workflow and proposed
+in PR #1:
 - .github/workflows/ci.yml
 - .github/pull_request_template.md
 - docs/development-workflow.md
@@ -47,32 +53,39 @@ Files prepared:
 - Updated docs/checkpoint.md.
 
 The initial workflow-file review found no critical contradictions.
-Its requested agent-instruction updates have been incorporated.
+Its requested agent-instruction updates were incorporated.
+Workflow commit e2484b6 was pushed; GitHub CI check "Python quality"
+completed successfully; main protection was applied and verified.
 
-Current local checks and final documentation review remain pending.
+This documentation update must be committed, pushed, and CI-rechecked
+before requesting final human review.
 
 ## GitHub Verification
 
 - Baseline push: Completed.
 - Workflow branch created locally: Completed.
-- Workflow branch push: Not performed.
-- First workflow PR: Not created.
-- GitHub CI execution: Not verified.
-- Main branch protection: Not configured.
-- Independent reviewer availability: Not confirmed.
+- Workflow commit e2484b6: Pushed.
+- First workflow PR: #1, open and not merged.
+- GitHub CI check "Python quality": Completed successfully for e2484b6.
+- Main branch protection: Applied and verified.
+- Invited reviewers: cibervicho and jfruvalc.
+- Invitation acceptance and independent approval: Not confirmed.
+- CI recheck for this documentation update: Pending.
 
-Do not describe protection or CI success as established.
+Do not describe PR #1 as merged or independent approval as obtained.
 
 ## Next Bounded Actions
 
-1. Run local tests, lint, formatting, and whitespace checks.
-2. Review the agent instructions and checkpoint changes.
-3. Review and commit the workflow setup after explicit authorization.
-4. Push the branch and create a PR after explicit authorization.
-5. Verify the actual GitHub CI result and check name.
-6. Configure and verify main protection through a separately approved step.
-7. Resolve reviewer availability before requiring independent approval.
-8. Merge only after explicit authorization and required checks.
+1. Run local checks for this documentation update.
+2. Review and commit this update after explicit authorization.
+3. Push the update after explicit authorization.
+4. Recheck GitHub CI after the push.
+5. Request final human review only after the CI recheck.
+6. Confirm invitation acceptance and obtain independent approval.
+7. Merge PR #1 only after explicit owner authorization, required CI,
+   and required approval.
+8. After merge, create feat/config-validation through an approved Git
+   operation.
 
 ## Next Product Implementation
 
@@ -92,12 +105,12 @@ No configuration implementation files currently exist.
 - Retention and deletion.
 - Real-participant acceptance of the correction limitation.
 - Deadline and weekly availability.
-- Repository review enforcement while no independent reviewer is available.
+- Invitation acceptance and independent approval for PR #1.
 
 ## Unperformed Verification
 
 - Product acceptance tests.
-- GitHub CI.
+- CI recheck after this documentation update.
 - Deployment checks.
 - Backup restore.
 - Private-group rehearsal.

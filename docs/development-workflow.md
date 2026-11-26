@@ -1,9 +1,13 @@
 # Development Workflow
 
-Status: Workflow baseline being introduced through its first PR.
+Status: Verified workflow baseline; PR #1 remains open.
 
-CI and branch-protection settings require verification.
-Do not describe protections as enforced until configured and checked.
+Workflow commit e2484b6 was pushed on chore/development-workflow.
+GitHub CI check "Python quality" completed successfully.
+Main protection was applied and verified.
+
+This documentation update must be committed, pushed, and CI-rechecked
+before requesting final human review. PR #1 has not been merged.
 
 ## 1. Purpose
 
@@ -76,10 +80,11 @@ Initial design:
 - No secrets or deployment credentials.
 - No automatic deployment.
 
-Initial job name: Python quality.
+Initial and verified check name: Python quality.
 
-Verify the actual check name and successful execution before making
-it a required branch-protection check.
+The GitHub CI check "Python quality" completed successfully for workflow
+commit e2484b6. It is now a required main-protection check.
+Future workflow changes require a fresh CI result.
 
 Action revisions and tooling upgrades require review.
 
@@ -92,28 +97,33 @@ The PR author cannot satisfy an independent approving-review requirement.
 
 AI review is assistance, not a required human approval.
 
-Until another reviewer is available:
+Current status: cibervicho and jfruvalc were invited.
+Invitation acceptance and independent approval are not yet confirmed.
+
+Until independent approval is granted:
 - Record author review and AI-assisted findings.
 - Do not claim independent approval.
-- Do not configure an external approval requirement and routinely bypass it.
+- Do not bypass the configured approval requirement.
 
-Once a reviewer is available:
-- Configure at least one required approving review.
-- Request that review before merging.
-- Resolve blocking findings.
+Once approval is granted:
+- Record the approving reviewer.
+- Resolve blocking findings before merging.
 
-## 7. Planned Main Protection
+## 7. Verified Main Protection
 
-Configure and verify:
-- Pull requests required.
-- Successful Python quality check required.
-- Conversations resolved before merge.
-- Force pushes and branch deletion prohibited.
-- Independent approval required when a reviewer is available.
-- No routine protection bypasses.
+Applied and verified on main:
+- Required check: Python quality.
+- Strict/up-to-date branch requirement enabled.
+- One approving review required.
+- Stale approvals dismissed.
+- Conversation resolution required.
+- Protection enforced for administrators.
+- Force pushes and main deletion disabled.
 
-The exact repository settings remain pending.
 Workflow files alone do not enforce branch protection.
+Do not bypass or routinely override these protections.
+Independent approval is configured as required, but no approval has
+been recorded for PR #1.
 
 ## 8. Merge Policy
 
@@ -153,15 +163,25 @@ Deployment remains a separately approved operational task.
 
 ## 11. Current Setup Status
 
+Historical setup:
 - Public GitHub repository created.
-- Baseline published.
-- Workflow branch created.
-- Workflow files being prepared.
-- GitHub CI execution not yet verified.
-- Main protection not yet configured.
-- Independent reviewer availability not yet confirmed.
+- Initial baseline published.
+- Workflow files prepared on chore/development-workflow.
+
+Verified current status:
+- Workflow commit e2484b6 was pushed.
+- PR #1 is open and not merged.
+- GitHub CI check "Python quality" completed successfully.
+- Main protection was applied and verified; see section 7.
+- cibervicho and jfruvalc were invited; acceptance is unconfirmed.
+- Independent approval is not confirmed.
+
+Pending for this documentation update:
+- Commit, push, and CI recheck are required before requesting final
+  human review.
+- No configuration implementation or OCI deployment has occurred.
 
 ## Document Boundary
 
-This document defines the intended workflow.
-Repository enforcement and CI success must be verified separately.
+This document defines workflow rules and records verified setup.
+Future repository enforcement and CI results must be verified separately.
