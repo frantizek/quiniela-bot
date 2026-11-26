@@ -1,146 +1,179 @@
 # User Flows
 
-Status: Proposed interaction design.
+Status: MVP interaction baseline.
 
-All actual bot messages and buttons will use Mexican Spanish.
-Descriptions and button concepts below are English.
+Descriptions are English.
+Actual Telegram messages and buttons use Mexican Spanish.
+Exact commands and button layout remain open.
 
-Exact commands remain undecided.
+## 1. Shared Confirmation Rules
 
-## 1. Create and Configure
+Apply these rules to opening registration, outcomes, and cancellation:
 
-Actor: Authorized administrator
+- Only the initiating administrator may confirm.
+- Recheck current authorization.
+- Expire confirmation 10 minutes after creation.
+- Reject confirmation at or after expiration.
+- Reject consumed confirmations.
+- Reject a changed business-state version.
+- Require re-initiation after staleness or expiration.
 
-1. Request creation of a quiniela.
-2. Bot checks authorization and absence of another active quiniela.
+See D-011 in docs/decisions.md.
+
+## 2. Create and Configure
+
+Actor: Current group owner or administrator
+
+1. Request creation.
+2. Bot verifies authorization and absence of another non-terminal quiniela.
 3. Administrator provides a title and team names.
-4. Bot validates the list.
-5. Bot displays the draft for review.
+4. Bot validates and displays the draft.
 
-Failure cases:
-- Unauthorized actor.
-- Existing non-terminal quiniela.
-- Empty or duplicate team names.
-- Fewer than two teams.
-- More teams than the eventual configured maximum.
+Reject:
+- Unidentified or unauthorized actors.
+- Unverifiable authorization.
+- Another non-terminal quiniela in the same group.
+- Empty or duplicate normalized team names.
+- Team counts outside 2 to 32.
 
-No participant registration is available in DRAFT.
+Powers of two are not required.
+Registration is unavailable in DRAFT.
 
-## 2. Open Registration
+## 3. Open Registration
 
-Actor: Authorized administrator
+Actor: Current group owner or administrator
 
-1. Request opening of registration.
-2. Bot displays the final team list, capacity, and no-withdrawal rule.
-3. Administrator confirms.
-4. Bot locks the team list and transitions to OPEN.
-5. Bot publishes a registration message with a Join button.
+1. Request opening.
+2. Bot displays the final teams, capacity, and no-withdrawal rule.
+3. Administrator confirms using the shared rules.
+4. Bot commits OPEN and locks the team list.
+5. Bot publishes the registration message and Join button.
 
-Canceling this confirmation leaves the quiniela in DRAFT.
+Canceling the pending confirmation leaves the quiniela in DRAFT.
+Changing the draft invalidates an outstanding opening confirmation.
 
-## 3. Join
+## 4. Join
 
 Actor: Group member
 
 1. Press Join.
-2. Bot checks the current quiniela and registration capacity.
+2. Bot validates group, quiniela, state, identity, and capacity.
 3. Bot registers the user once.
-4. Bot confirms registration and updates the participant count.
+4. Bot confirms registration and updates the count.
 
-Failure cases:
-- Already registered.
-- Registration closed.
-- Capacity exhausted.
-- Button belongs to an older or canceled quiniela.
+Reject:
+- Duplicate registration.
+- Closed or full registration.
+- Buttons for another or older quiniela.
+- Canceled or completed quinielas.
 
-Leaving the Telegram group does not release the participant's slot.
+Leaving the group does not release the slot.
+No withdrawal or substitution exists.
 
-## 4. Automatic Draw
+## 5. Automatic Draw
 
 Trigger: Final successful registration
 
-1. Bot registers the final participant and stores all assignments
-   in the same transaction.
-2. Bot transitions the quiniela to ACTIVE.
-3. Bot publishes the full participant-to-team assignment list.
+1. Store the final participant and all assignments atomically.
+2. Transition to ACTIVE.
+3. Store announcement intent.
+4. Publish the assignment list.
 
-There is no administrator approval or reroll action.
+Each participant gets one team.
+Each team gets one participant.
 
-If publication fails, retry publication using the stored assignments.
+There is no approval or reroll action.
+Retry failed publication using the stored assignments.
 
-## 5. Record an Outcome
+## 6. Record an Outcome
 
-Actor: Authorized administrator
+Actor: Current group owner or administrator
 
-1. Request outcome entry.
-2. Select the advancing team from active teams.
-3. Select a different active team as eliminated.
-4. Bot displays both teams and their assigned participants.
-5. Administrator confirms.
-6. Bot checks authorization and current state again.
-7. Bot stores the outcome and publishes the update.
+1. Request outcome entry in ACTIVE.
+2. Select the advancing team.
+3. Select a different active team to eliminate.
+4. Bot displays both teams and assigned participants.
+5. Administrator confirms using the shared rules.
+6. Bot revalidates state and commits the outcome.
+7. Bot publishes the update.
 
-Only the administrator who initiated the pending action may confirm it.
+Reject:
+- Unauthorized or unidentified actors.
+- Unverifiable authorization.
+- Confirmation by another administrator.
+- Expired, consumed, or stale confirmation.
+- Identical teams.
+- Foreign or already eliminated teams.
+- A quiniela that is not ACTIVE.
 
-Failure cases:
-- User is no longer authorized.
-- Confirmation expired or was already consumed.
-- Quiniela changed since the action was prepared.
-- Either selected team is no longer active.
-- Quiniela is completed or canceled.
+The administrator determines the sporting result.
+The bot does not verify fixtures or calculate scores.
 
-The bot does not verify whether the selected teams played each other.
+Elimination does not remove the participant from the Telegram group.
 
-## 6. Complete the Quiniela
+## 7. Complete
 
 Trigger: A confirmed outcome leaves one active team
 
-1. Bot records completion with the final outcome.
-2. Bot publishes the winning team and participant.
-3. Further outcome entry is rejected.
+1. Commit completion with the final outcome.
+2. Store winner-announcement intent.
+3. Publish the winning team and participant.
 
-## 7. View Status
+Reject further outcomes and cancellation.
+Announcement retries do not alter the winner.
+
+## 8. View Status
 
 Actor: Group member
 
-Before the draw:
-- Title.
-- Team list.
-- Registration count and capacity.
+Show:
+- Before drawing: title, teams, registration count, and capacity.
+- During play: assignments and active/eliminated status.
+- After completion: winner.
+- After cancellation: canceled status and relevant historical information.
 
-After the draw:
-- Participant assignments.
-- Active and eliminated teams.
-- Current quiniela state.
+Status views do not change the business-state version.
 
-After completion:
-- Winning team and participant.
+## 9. Cancel
 
-## 8. Cancel the Entire Quiniela
+Actor: Current group owner or administrator
 
-Status: Should-have feature; inclusion pending.
-
-Actor: Authorized administrator
+Available only in DRAFT, OPEN, and ACTIVE.
 
 1. Request cancellation.
-2. Bot explains that the entire quiniela will be closed.
-3. Administrator confirms.
-4. Bot records cancellation and publishes the status.
+2. Bot explains that the entire quiniela will close.
+3. Administrator confirms using the shared rules.
+4. Bot commits cancellation and announcement intent.
+5. Bot publishes the canceled status.
 
-Historical records remain stored.
-Cancellation is not an individual withdrawal or a redraw.
+Preserve historical registrations, assignments, and outcomes.
 
-## 9. Correct an Outcome
+Cancellation is not a withdrawal, correction, or redraw.
+A later quiniela is a separate record.
 
-Not yet designed.
+Reject cancellation of COMPLETED or CANCELLED quinielas.
 
-Do not provide direct result editing until correction rules,
-dependent-outcome handling, and audit requirements are approved.
+## 10. Correction Limitation
 
-## 10. Restart and Delivery Recovery
+No editing or undo of confirmed outcomes exists in the first implementation.
 
-1. Load committed state from storage.
-2. Resume normal interactions.
+Before real-participant use:
+- Explicitly accept this limitation; or
+- Implement an approved and tested correction workflow.
+
+Cancellation does not repair an outcome.
+
+## 11. Restart and Recovery
+
+1. Load committed state.
+2. Resume interactions.
 3. Retry pending announcements.
-4. Reject stale or consumed confirmation actions.
-5. Never recreate persisted assignments or reapply stored outcomes.
+4. Reject expired, stale, or consumed confirmations.
+5. Never recreate assignments or reapply outcomes.
+
+Duplicate recovery announcements must not produce duplicate business actions.
+
+## Document Boundary
+
+These flows describe interaction behavior.
+Final commands and message wording remain implementation decisions.

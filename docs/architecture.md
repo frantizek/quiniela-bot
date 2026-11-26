@@ -1,18 +1,18 @@
 # Architecture
 
-Status: Proposed MVP design.
+Status: Accepted MVP direction with unresolved environment details.
 
-Requirements authority: docs/requirements.md.
-Decision status: docs/decisions.md.
+Product authority: docs/requirements.md.
+Decision authority: docs/decisions.md.
 
-## 1. Design Goals
+## 1. Goals
 
-- Keep the application small and understandable.
-- Separate Telegram interactions from business rules.
-- Preserve committed state across restarts.
-- Prevent duplicate registrations, draws, and eliminations.
+- Keep the implementation small and understandable.
+- Separate Telegram interactions from business behavior.
+- Preserve state across restarts.
+- Prevent duplicate registrations, draws, and outcomes.
 - Deploy independently from the existing OCI bot.
-- Avoid football-specific calculations and external sports services.
+- Avoid football-specific calculations.
 
 ## 2. Logical Structure
 
@@ -20,56 +20,81 @@ Telegram Group
     |
     v
 Telegram Adapter
-    - Commands and button callbacks
+    - Commands and callbacks
     - Actor and group identification
-    - Authorization checks
-    - Interface rendering
+    - Current-role authorization
+    - Mexican Spanish interface
     |
     v
 Application Services
-    - Quiniela configuration
-    - Registration and automatic draw
-    - Outcome confirmation
-    - Status and completion
+    - Configuration and lifecycle
+    - Registration and draw
+    - Administrative confirmations
+    - Outcomes and cancellation
     |
     v
-Persistence
-    - SQLite database
+SQLite Persistence
+    - Business records
+    - Pending actions
     - Audit events
     - Pending announcements
 
-The Telegram adapter must not contain the core registration,
-drawing, or elimination rules.
+Core rules must not depend on Telegram handlers.
 
-## 3. Quiniela Lifecycle
+## 3. Lifecycle
 
 DRAFT -> OPEN -> ACTIVE -> COMPLETED
 
-DRAFT, OPEN, or ACTIVE may transition to CANCELLED if the
-cancellation feature is included.
+DRAFT, OPEN, and ACTIVE may transition to CANCELLED.
 
-Definitions:
-- DRAFT: administrator configures teams.
-- OPEN: team list is locked; participants may register.
-- ACTIVE: all slots are filled and assignments are stored.
+- DRAFT: configure the title and teams.
+- OPEN: teams are locked; registration is available.
+- ACTIVE: assignments exist; outcomes may be recorded.
 - COMPLETED: exactly one team remains active.
-- CANCELLED: no further registration or outcomes are accepted.
+- CANCELLED: the entire quiniela is closed.
 
-OPEN transitions directly to ACTIVE when the final registration
-and all assignments are committed.
+COMPLETED and CANCELLED are terminal.
+One non-terminal quiniela is allowed per group.
 
-There is no separately committed DRAWING state in the MVP.
+Final registration and drawing transition OPEN directly to ACTIVE.
+There is no separately committed DRAWING state.
 
-Terminal states are COMPLETED and CANCELLED.
-Each group may have only one non-terminal quiniela.
+## 4. Business-State Version
 
-## 4. Proposed Data Model
+Initialize each new quiniela at version 1.
+
+Increment the version exactly once per successful transaction that
+changes existing quiniela business state.
+
+Changes include:
+- Title or team-list changes.
+- Lifecycle transitions.
+- Successful registrations and assignments.
+- Confirmed outcomes.
+- Cancellation.
+
+Do not increment it for:
+- Pending-action creation.
+- Status views.
+- Delivery attempts.
+- Announcement retries.
+- Rejected, failed, rolled-back, or duplicate actions.
+
+A pending action stores the expected version.
+A mismatch makes confirmation stale.
+
+The authoritative policy is D-011.
+
+## 5. Data Model
+
+Exact schema, indexes, and migration scripts remain implementation tasks.
 
 ### Quiniela
 - ID
 - Telegram group ID
 - Title
 - State
+- Business-state version
 - Creator user ID
 - Created and updated timestamps
 
@@ -79,8 +104,9 @@ Each group may have only one non-terminal quiniela.
 - Display name
 - Normalized name
 
-Normalized names ignore surrounding whitespace and letter case.
-Names are unique within a quiniela.
+Names must be non-empty and unique within a quiniela.
+Normalization ignores surrounding whitespace and letter case.
+Support 2 to 32 teams.
 
 ### Participant
 - ID
@@ -89,15 +115,15 @@ Names are unique within a quiniela.
 - Display-name snapshot
 - Registration timestamp
 
-Telegram user IDs are unique within a quiniela.
-Usernames are not identity keys.
+Use Telegram user ID as identity.
+Enforce uniqueness within the quiniela.
 
 ### Assignment
 - Quiniela ID
 - Participant ID
 - Team ID
 
-Each participant and team appears once per quiniela.
+Each participant and team occurs once per quiniela.
 Assignments are immutable.
 
 ### Outcome
@@ -109,20 +135,17 @@ Assignments are immutable.
 - Confirmation timestamp
 - Unique action identifier
 
-An active team is a team without a committed elimination outcome.
-Participant elimination status follows the assigned team's status.
+A team is active if it has no committed elimination outcome.
+Participant status follows the assigned team.
 
 ### Pending Action
 - ID
 - Quiniela ID
 - Initiating administrator user ID
-- Proposed action payload
-- Expected quiniela version
-- Expiration time
+- Action type and payload
+- Expected business-state version
+- Expiration timestamp
 - Confirmation status
-
-Pending actions allow confirmation without treating button contents
-as authoritative state.
 
 ### Audit Event
 - ID
@@ -132,8 +155,6 @@ as authoritative state.
 - Timestamp
 - Minimal relevant details
 
-Do not store credentials or full chat messages.
-
 ### Pending Announcement
 - ID
 - Related event ID
@@ -141,95 +162,139 @@ Do not store credentials or full chat messages.
 - Message type and required rendering data
 - Delivery state
 - Retry metadata
-- Telegram message ID, when available
+- Telegram message ID when available
 
-## 5. Critical Transactions
+Constraints must prevent cross-quiniela references and duplicates.
+Audit records must not contain secrets or full chat histories.
+
+## 6. Authorization and Confirmation
+
+Authorize the current group owner and all current group administrators.
+Do not maintain a separate authorized-user list.
+
+Reject unidentified administrative actors.
+Fail closed if current authorization cannot be verified.
+
+For opening, outcomes, and cancellation:
+- Only the initiating administrator may confirm.
+- Recheck authorization at confirmation.
+- Expire the action after 10 minutes.
+- Reject consumed or stale actions.
+- Validate current state inside the write transaction.
+
+Do not treat callback contents as authoritative business records.
+
+## 7. Transactions
+
+### Draft Creation and Editing
+
+Creation:
+- Enforce one non-terminal quiniela per group.
+- Initialize the new quiniela at version 1.
+
+Editing:
+- Allow only in DRAFT.
+- Validate title and team changes.
+- Increment the version once per successful state-changing transaction.
+
+### Opening Registration
+
+After current authorization is verified:
+
+1. Validate pending-action ownership, expiration, and expected version.
+2. Require DRAFT and 2 to 32 valid teams.
+3. Transition to OPEN.
+4. Increment the version once.
+5. Store audit and announcement intent.
+6. Consume the pending action.
+7. Commit atomically.
 
 ### Registration and Draw
 
-Within one database write transaction:
+Within one write transaction:
 
-1. Verify that registration is open.
-2. Reject duplicate registration or exhausted capacity.
+1. Require OPEN.
+2. Reject duplicate users or exhausted capacity.
 3. Insert the participant.
-4. If capacity is reached, create random one-to-one assignments.
-5. Set the quiniela to ACTIVE.
-6. Record audit and pending-announcement entries.
-7. Commit.
+4. If capacity is reached, create one-to-one random assignments.
+5. Transition to ACTIVE if assignments were created.
+6. Increment the version once.
+7. Store audit and required announcement intent.
+8. Commit atomically.
 
-Any failure rolls back the whole transaction.
-
-Randomness must use an OS-backed random source.
-Persisted assignments are the authority after commit.
-Never recompute them to retry an announcement.
+Use an OS-backed random source.
+Persisted assignments are authoritative.
+A failed transaction must leave no partial final registration or draw.
 
 ### Outcome Confirmation
 
-Within one database write transaction:
+After current authorization is verified:
 
-1. Validate the pending action and current quiniela state.
-2. Verify both teams belong to the quiniela and remain active.
-3. Reject identical advancing and eliminated teams.
-4. Insert the outcome once.
-5. Complete the quiniela if one team remains active.
-6. Record audit and pending-announcement entries.
-7. Mark the pending action consumed.
-8. Commit.
+1. Validate the pending action.
+2. Require ACTIVE.
+3. Require two different active teams from the same quiniela.
+4. Store the outcome once.
+5. Transition to COMPLETED if one active team remains.
+6. Increment the version once.
+7. Store audit and announcement intent.
+8. Consume the pending action.
+9. Commit atomically.
 
-Administrative authorization must be checked before this transaction.
-Confirmation must reject stale or already consumed actions.
+### Cancellation
 
-## 6. Authorization
+After current authorization is verified:
 
-Proposed policy:
-- Current Telegram group owner and administrators are authorized.
-- No custom administrator list.
-- Authorization is checked on initiation and confirmation.
-- Administrative actions require an identifiable actor.
-- Verification failures cause rejection without mutation.
+1. Validate the pending action.
+2. Require DRAFT, OPEN, or ACTIVE.
+3. Transition to CANCELLED.
+4. Increment the version once.
+5. Store audit and announcement intent.
+6. Consume the pending action.
+7. Commit atomically.
 
-The bot is proposed to operate as a group administrator with
-minimal required permissions.
+Preserve registrations, assignments, and outcomes.
 
-Exact Telegram setup permissions remain to be validated.
+## 8. Announcement Recovery
 
-## 7. Announcement Recovery
+Store publication intent with the business transaction.
+Send only after commit.
 
-Store state changes and announcement intent before sending messages.
+Retry pending announcements after delivery failures or restart.
+Never repeat a draw, elimination, or cancellation to retry publication.
 
-After restart, retry pending announcements.
-A failed send must never trigger a new draw or another elimination.
+An interrupted send can leave delivery uncertain.
+Exactly-once Telegram message delivery is not guaranteed.
 
-Do not promise exactly-once Telegram delivery.
-An interrupted send may leave uncertainty about whether a message
-was delivered. Duplicate announcements are preferable to corrupted state.
-
-## 8. Runtime Direction
+## 9. Runtime Direction
 
 - Python.
 - SQLite.
-- One application process initially.
-- Long polling proposed for Telegram updates.
-- Separate token, environment, database, and service from the existing bot.
+- One application process.
+- Telegram long polling.
+- Separate OCI service, token, environment, and database.
 
-Python version, Telegram library, hosting capacity, and supervisor
-remain undecided.
+Do not run multiple polling processes for this bot.
+Python version, library, OCI capacity, and supervisor remain open.
 
-## 9. Security and Operations
+## 10. Security and Operational Gates
 
-- Secrets remain outside Git and AI context.
-- Validate all callback data against stored state.
-- Scope every operation to its group and quiniela.
-- Use parameterized database queries.
-- Escape user-controlled text when rendering Telegram messages.
+- Keep secrets outside Git and AI context.
 - Use synthetic development data.
-- Document backups, restore, migrations, and rollback before deployment.
+- Use parameterized SQL.
+- Escape user-controlled message content.
+- Scope every action to its group and quiniela.
+- Test migrations, backup, restore, and rollback before deployment.
+- Approve retention and deletion before real-participant use.
+- Resolve the correction release gate before real-participant use.
 
-## 10. Deferred Features
+## 11. Exclusions
 
-- Result correction until its safety rules are approved.
-- Channels.
-- Sports APIs and score calculations.
-- Automatic tournament brackets.
-- Payments.
-- Multiple active quinielas in one group.
+No score calculation, sports APIs, brackets, payments, withdrawals,
+substitutions, channels, or runtime AI.
+
+No result editing or undo in the first implementation.
+
+## Document Boundary
+
+This file describes architecture.
+Accepted decisions are recorded separately in docs/decisions.md.
